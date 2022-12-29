@@ -1,0 +1,14 @@
+# Ignore the files
+*.zip
+*.pptx
+
+# Ignore the directories
+.idea/
+__pycache__/
+data/
+figures/
+hk_tweets/
+hk_tweets_prev/
+combined_hk_tweets/
+manuscript/
+topic_model/
