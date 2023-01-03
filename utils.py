@@ -229,7 +229,7 @@ def spatial_join(point_gdf: gpd.geodataframe, shape_area: gpd.geodataframe) -> g
         point_gdf = point_gdf.set_crs(epsg=shape_epsg_code)
     assert point_gdf.crs == shape_area.crs, 'The coordinate systems do not match!'
 
-    joined_data = gpd.sjoin(left_df=point_gdf, right_df=shape_area, op='within')
+    joined_data = gpd.sjoin(left_df=point_gdf, right_df=shape_area, predicate='within')
     if 'id_str' in joined_data:
         joined_data_final = joined_data.drop_duplicates(subset=['id_str'])
     else:
