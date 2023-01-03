@@ -33,7 +33,7 @@ from utils import find_nearby_pois
 stopwords = list(set(STOPWORDS))
 strange_terms = ['allcaps', 'repeated', 'elongated', 'repeat', 'user', 'percent_c', 'hong kong', 'hong',
                  'kong', 'u_u', 'u_u_number', 'u_u_u_u', 'u_number', 'elongate', 'u_number_u',
-                 'u', 'number', 'm', 'will', 'hp', 'grad', 'ed', 'boo']
+                 'u', 'number', 'm', 'will', 'hp', 'grad', 'ed', 'boo', 'http', 'https']
 unuseful_terms = stopwords + strange_terms
 unuseful_terms_set = set(unuseful_terms)
 
@@ -109,29 +109,34 @@ def show_topics(vectorizer: CountVectorizer, lda_model: LatentDirichletAllocatio
     return topic_keywords
 
 
-def get_lda_model(text_in_one_list, grid_search_params, number_of_keywords, topic_predict_file,
-                  keywords_file, topic_number, grid_search_or_not=True,
-                  saving_path=topic_results):
+def get_lda_model(text_in_one_list, grid_search_params, number_of_keywords,
+                  topic_predict_file, keywords_file, topic_number, process_poi=False,
+                  grid_search_or_not=True, saving_path=topic_results):
     """
+    # TODO: set proper topic number, by grid search
+    # For tweet text, only consider verb and noun
     :param text_in_one_list: a text list. Each item of this list is a posted tweet
     :param grid_search_params: the dictionary which contains the values of hyperparameters for grid search
     :param number_of_keywords: number of keywords to represent a topic
     :param topic_predict_file: one file which contains the predicted topic for each tweet
     :param keywords_file: one file which saves all the topics and keywords
     :param topic_number: The number of topics we use(this argument only works if grid_search_or_not = False)
+    :param process_poi: whether process the poi text or not
     :param grid_search_or_not: Whether grid search to get 'best' number of topics
     :param saving_path: path used to save the results
     """
     # 1. Vectorized the data
     # For more info, please check:
     # https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
-    vectorizer = CountVectorizer(analyzer='word',
-                                 min_df=1,  # minimum occurrences of a word
-                                 stop_words='english',  # remove stop words
-                                 lowercase=True,  # convert all words to lowercase
-                                 token_pattern='[a-zA-Z0-9]{3,}',  # num chars > 3
-                                 # max_features=50000,   # max number of unique words
-                                 )
+    if process_poi:
+        vectorizer = CountVectorizer(analyzer='word')
+    else:
+        vectorizer = CountVectorizer(analyzer='word',
+                                     min_df=1,  # minimum occurrences of a word
+                                     stop_words=unuseful_terms,  # remove stop words
+                                     lowercase=True,  # convert all words to lowercase
+                                     token_pattern='[a-zA-Z0-9]{3,}'  # num chars > 3
+                                     )
     text_vectorized = vectorizer.fit_transform(text_in_one_list)
 
     # 2. Use the GridSearch to find the best hyperparameter
@@ -181,7 +186,8 @@ def get_lda_model(text_in_one_list, grid_search_params, number_of_keywords, topi
     # df_topic_distribution.columns = ['Topic Num', 'Num Documents']
 
     # 4. Get the keywords for each topic
-    topic_keywords = show_topics(vectorizer=vectorizer, lda_model=best_lda_model, n_words=number_of_keywords)
+    topic_keywords = show_topics(vectorizer=vectorizer, lda_model=best_lda_model,
+                                 n_words=number_of_keywords)
     # Topic - Keywords Dataframe
     df_topic_keywords = pd.DataFrame(topic_keywords)
     df_topic_keywords.columns = ['Word ' + str(i) for i in range(df_topic_keywords.shape[1])]
@@ -234,7 +240,7 @@ def develop_lda_pois(coordinates_records: gpd.geodataframe.GeoDataFrame,
                   keywords_file=keyword_file_name,
                   topic_predict_file=topic_predict_file_name,
                   saving_path=saving_path, grid_search_or_not=True,
-                  topic_number=topic_number)
+                  topic_number=topic_number, process_poi=True)
     return poi_text_list
 
 
@@ -272,10 +278,40 @@ def build_topic_model(df, colname, keyword_file_name, topic_number, topic_predic
                                      keywords_file=keyword_file_name,
                                      topic_predict_file=topic_predict_file_name,
                                      saving_path=saving_path, grid_search_or_not=True,
-                                     topic_number=topic_number)
+                                     topic_number=topic_number, process_poi=False)
 
 
-def main_topics():
+def main_poi_topics():
+    """
+    Main function ro run topic modeling before and during the Covid19
+    :return:
+    """
+    poi_locs = gpd.read_file(os.path.join(shapefile_path, 'hk_poi.shp'),
+                             encoding='utf-8', index_col=0)
+    cluster_labels = [str(cluster_num) for cluster_num in range(0, 7)]
+    tweet_path = os.path.join(records_path, 'user_cluster_tweets', 'tweets_shapefile')
+    for user_cluster in cluster_labels:
+        print("***Generating the poi topics for cluster {}***".format(user_cluster))
+        before_shapefile = gpd.read_file(
+            os.path.join(tweet_path, 'before_tweets_geo_cluster_{}.shp'.format(user_cluster)),
+        index_col=0, encoding='utf-8')
+        during_shapefile = gpd.read_file(
+            os.path.join(tweet_path, 'during_tweets_geo_cluster_{}.shp'.format(user_cluster)),
+        index_col=0, encoding='utf-8')
+        develop_lda_pois(coordinates_records=before_shapefile,
+                         poi_dataframe=poi_locs,
+                         topic_number=5,
+                         keyword_file_name='poi_topics_cluster_{}_before.csv'.format(user_cluster),
+                         topic_predict_file_name='poi_topic_each_tweet_cluster_{}_before.csv'.format(user_cluster))
+        develop_lda_pois(coordinates_records=during_shapefile,
+                         poi_dataframe=poi_data,
+                         topic_number=5,
+                         keyword_file_name='poi_topics_cluster_{}_during.csv'.format(user_cluster),
+                         topic_predict_file_name='poi_topic_each_tweet_cluster_{}_during.csv'.format(user_cluster))
+        print('Done!')
+
+
+def main_tweet_topics():
     """
     Main function ro run topic modeling before and during the Covid19
     :return:
@@ -295,15 +331,7 @@ def main_topics():
 
 
 if __name__ == '__main__':
-    # main_topics()
-    # Load one geocoded tweet dataframe
-    sample_tweets_before = gpd.read_file(os.path.join(
-        records_path, 'user_cluster_tweets', 'tweets_shapefile', 'before_tweets_geo_cluster_3.shp'),
-    encoding='utf-8', index_col=0)
-    poi_data = gpd.read_file(os.path.join(shapefile_path, 'hk_poi.shp'), encoding='utf-8', index_col=0)
-    nearby_poi_results = develop_lda_pois(coordinates_records=sample_tweets_before,
-                                          poi_dataframe=poi_data,
-                                          topic_number=10,
-                                          keyword_file_name='poi_topics_cluster_3_before.csv',
-                                          topic_predict_file_name='poi_topic_each_tweet_cluster_3_before.csv')
-
+    # Topic modeling based on POIs
+    main_poi_topics()
+    # # Topic modeling based on tweet text
+    # main_tweet_topics()
