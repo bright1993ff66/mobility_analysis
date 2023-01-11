@@ -47,6 +47,15 @@ column_type_dict_filtered = {'text': str, 'id_str': str, 'created_str': str, 'la
                              'translate': str}
 
 
+def return_max_key(dictionary: dict):
+    """
+    Get the key for a dictionary's max value
+    :param dictionary: a python dictionary with float values
+    :return: the key with maximum value
+    """
+    return max(dictionary, key=dictionary.get)
+
+
 def get_epsg_code(shape) -> int:
     """
     Get the epsg code given a shapefile
