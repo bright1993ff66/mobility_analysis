@@ -141,7 +141,7 @@ def add_texts(x: list or np.ndarray, y: list or np.ndarray, ax: plt.axis) -> Non
         ax.text(x[i], y[i] + 0.01 * y[i], s=y[i], size=16)
 
 
-def plot_inertias(inertia_dict, highest_cluster_num: int = 12) -> None:
+def plot_inertias(inertia_dict, highest_cluster_num: int = 20) -> None:
     """
     Plot the inertia given an inertia dictionary
     :param inertia_dict: an inertia dictionary saving the cluster number and respective inertia values
@@ -156,8 +156,8 @@ def plot_inertias(inertia_dict, highest_cluster_num: int = 12) -> None:
     setup_figure_axis(axis)
 
     axis.plot(cluster_nums, inertia_vals, 'bx-')
-    axis.set_xticks(list(range(3, 13, 1)))
-    axis.set_xticklabels([str(val) for val in range(3, 13, 1)])
+    axis.set_xticks(list(range(3, highest_cluster_num+1, 1)))
+    axis.set_xticklabels([str(val) for val in range(3, highest_cluster_num+1, 1)])
     axis.set_xlabel('Number of Clusters')
     axis.set_ylabel('Inertia')
     # axis.set_title('Select the Best Number of Clusters')
