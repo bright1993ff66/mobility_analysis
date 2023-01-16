@@ -1,6 +1,11 @@
 # Ignore the files
 *.zip
 *.pptx
+*.cpg
+*.dbf
+*.prj
+*.shp
+*.shx
 
 # Ignore the directories
 .idea/
