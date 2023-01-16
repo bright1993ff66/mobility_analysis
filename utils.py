@@ -182,11 +182,9 @@ def combine_some_data(path: str, sample_num: int = None,
                                     usecols=considered_columns,
                                     dtype=column_dtype_dict)
         # Set the data type of columns
-        dataframe['user_id_str'] = dataframe['user_id_str'].astype(float)
-        dataframe['lat'] = dataframe['lat'].astype(float)
-        dataframe['lon'] = dataframe['lon'].astype(float)
-        dataframe['place_lat'] = dataframe['place_lat'].astype(float)
-        dataframe['place_lon'] = dataframe['place_lon'].astype(float)
+        dataframe = dataframe.astype({'user_id_str': np.int64,
+                                      'lat': float, 'lon': float, 'place_lat': float,
+                                      'place_lon': float})
         # Only consider subset of user
         if considered_users:
             dataframe_from_users = dataframe.loc[
