@@ -149,14 +149,18 @@ def filter_rows_having_strings(dataframe: pd.DataFrame,
 
 
 def combine_some_data(path: str, sample_num: int = None,
-                      get_geocoded: bool = True) -> pd.DataFrame:
+                      get_geocoded: bool = True,
+                      considered_users = None) -> pd.DataFrame:
     """
     Combine some random sampled dataframes from a local path
     :param path: an interested path
     :param sample_num: the number of files we want to consider
     :param get_geocoded: only get the geocoded tweets or not
+    :param considered_users: a set containing the ids of considered users
     :return a pandas dataframe saving the tweets
     """
+    if considered_users is None:
+        considered_users = set()
     files = [file for file in os.listdir(path) if file.endswith('.csv')]
     if not sample_num:
         random_sampled_files = files
@@ -177,11 +181,24 @@ def combine_some_data(path: str, sample_num: int = None,
                                          errors='ignore', encoding='utf-8'),
                                     usecols=considered_columns,
                                     dtype=column_dtype_dict)
+        # Set the data type of columns
+        dataframe['user_id_str'] = dataframe['user_id_str'].astype(float)
+        dataframe['lat'] = dataframe['lat'].astype(float)
+        dataframe['lon'] = dataframe['lon'].astype(float)
+        dataframe['place_lat'] = dataframe['place_lat'].astype(float)
+        dataframe['place_lon'] = dataframe['place_lon'].astype(float)
+        # Only consider subset of user
+        if considered_users:
+            dataframe_from_users = dataframe.loc[
+                dataframe['user_id_str'].isin(considered_users)]
+        else:
+            dataframe_from_users = dataframe.copy()
         if get_geocoded:  # Only consider the geocoded tweets
-            dataframe_geocoded = dataframe[~dataframe['lat'].isna()]
+            dataframe_geocoded = dataframe_from_users[~dataframe_from_users['lat'].isna()]
             dataframe_list.append(dataframe_geocoded)
         else:  # Consider all the tweets
-            dataframe_list.append(dataframe)
+            dataframe_geocoded = dataframe_from_users[~dataframe_from_users['place_lat'].isna()]
+            dataframe_list.append(dataframe_geocoded)
 
     concat_dataframe = pd.concat(dataframe_list, axis=0)
     concat_dataframe_reindex = concat_dataframe.reset_index(drop=True)
