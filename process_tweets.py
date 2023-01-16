@@ -120,11 +120,11 @@ def find_tweets_posted_by_user_cluster() -> None:
     # Get the tweets posted by each user cluster
     user_cluster_set = set(user_mobility_data['cluster_before'])
     print('User cluster counter: {}'.format(Counter(user_mobility_data['cluster_before'])))
-    for cluster in user_cluster_set:
+    for cluster_label in user_cluster_set:
         print('*' * 20)
-        print('Coping with the cluster: {}'.format(cluster))
-        selected_user = set(
-            user_mobility_data.loc[user_mobility_data['cluster_before'] == cluster]['user_id'])
+        print('Coping with the cluster: {}'.format(cluster_label))
+        selected_mobility = user_mobility_data.loc[user_mobility_data['cluster_before'] == cluster_label]
+        selected_user = set(selected_mobility['user_id'])
         print('Number of selected user: {}'.format(len(selected_user)))
         select_tweets_before = tweets_before.loc[tweets_before['user_id_str'].isin(selected_user)].reset_index(
             drop=True)
@@ -139,24 +139,24 @@ def find_tweets_posted_by_user_cluster() -> None:
         plot_geo_points_over_polygons(city_shape=city_shape_project,
                                       tweet_before_shape=select_tweets_before_geo,
                                       tweet_during_shape=select_tweets_during_geo,
-                                      save_filename='tweet_geo_compare_cluster_{}.png'.format(cluster))
+                                      save_filename='tweet_geo_compare_cluster_{}.png'.format(cluster_label))
         print('Num of tweets posted before Covid: {}'.format(len(
             set(select_tweets_before_geo['id_str']))))
         print('Num of tweets posted during Covid: {}'.format(len(
             set(select_tweets_during_geo['id_str']))))
         select_tweets_before.to_csv(os.path.join(
-            records_path, 'user_cluster_tweets', 'tweets_csv', 'before_tweets_cluster_{}.csv'.format(cluster)),
+            records_path, 'user_cluster_tweets', 'tweets_csv', 'before_tweets_cluster_{}.csv'.format(cluster_label)),
             encoding='utf-8')
         select_tweets_during.to_csv(os.path.join(
-            records_path, 'user_cluster_tweets', 'tweets_csv', 'during_tweets_cluster_{}.csv'.format(cluster)),
+            records_path, 'user_cluster_tweets', 'tweets_csv', 'during_tweets_cluster_{}.csv'.format(cluster_label)),
             encoding='utf-8')
         select_tweets_before_geo.to_file(os.path.join(
             records_path, 'user_cluster_tweets', 'tweets_shapefile',
-            'before_tweets_geo_cluster_{}.shp'.format(cluster)),
+            'before_tweets_geo_cluster_{}.shp'.format(cluster_label)),
             encoding='utf-8')
         select_tweets_during_geo.to_file(os.path.join(
             records_path, 'user_cluster_tweets', 'tweets_shapefile',
-            'during_tweets_geo_cluster_{}.shp'.format(cluster)),
+            'during_tweets_geo_cluster_{}.shp'.format(cluster_label)),
             encoding='utf-8')
         print('*' * 20 + '\n')
 
@@ -206,5 +206,7 @@ if __name__ == '__main__':
     #                               encoding='utf-8')
     # find_tweets_posted_by_same_users(prev_tweet_data=prev_filter_data,
     #                                  covid_tweet_data=cur_filter_data)
+    # # Then use text_translate.py and text_translate_before.py to translate the tweets
+    # Finally, find the tweets posted by each cluster of Twitter users
     print('Find the tweets posted by each Twitter user cluster...')
     find_tweets_posted_by_user_cluster()
